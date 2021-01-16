@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:project_autohub/screens/admin.dart';
 import 'package:project_autohub/screens/dashboard.dart';
+import 'package:project_autohub/screens/signUp.dart';
 
 class login extends StatefulWidget {
   @override
@@ -9,13 +12,23 @@ class login extends StatefulWidget {
 
 class _loginState extends State<login> {
   final _formKey = GlobalKey<FormState>();
-  String _email;
-  String _password;
-  final auth = FirebaseAuth.instance;
+  final TextEditingController _loginpassword = TextEditingController();
+  final TextEditingController _loginemailaddress = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.admin_panel_settings),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) {
+              return;
+            }));
+          },
+        ),
+        backgroundColor: Colors.black54,
+      ),
       backgroundColor: Colors.deepPurple,
       body: Container(
         decoration: BoxDecoration(
@@ -29,7 +42,7 @@ class _loginState extends State<login> {
           children: <Widget>[
             Container(
               alignment: Alignment.center,
-              padding: EdgeInsets.fromLTRB(10, 100, 10, 0),
+              padding: EdgeInsets.fromLTRB(10, 60, 10, 0),
               child: Text(
                 'Autohub',
                 style: TextStyle(
@@ -41,7 +54,7 @@ class _loginState extends State<login> {
             ),
             Container(
               alignment: Alignment.center,
-              padding: EdgeInsets.fromLTRB(10, 70, 10, 40),
+              padding: EdgeInsets.fromLTRB(10, 50, 10, 40),
               child: Text(
                 'Login',
                 style: TextStyle(
@@ -64,6 +77,7 @@ class _loginState extends State<login> {
                       Container(
                         padding: EdgeInsets.fromLTRB(10, 20, 10, 10),
                         child: TextField(
+                          controller: _loginemailaddress,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                               enabledBorder: OutlineInputBorder(
@@ -84,14 +98,12 @@ class _loginState extends State<login> {
                               ),
                               labelText: 'Email',
                               focusColor: Colors.blue),
-                          onChanged: (value) => setState(() {
-                            _email = value.trim();
-                          }),
                         ),
                       ),
                       Container(
                         padding: EdgeInsets.fromLTRB(10, 10, 10, 20),
                         child: TextField(
+                          controller: _loginpassword,
                           obscureText: true,
                           decoration: InputDecoration(
                               enabledBorder: OutlineInputBorder(
@@ -112,9 +124,6 @@ class _loginState extends State<login> {
                               ),
                               labelText: 'Password',
                               fillColor: Colors.white),
-                          onChanged: (value) => setState(() {
-                            _password = value.trim();
-                          }),
                         ),
                       ),
                       Row(
@@ -129,11 +138,7 @@ class _loginState extends State<login> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20.0)),
                               onPressed: () {
-                                auth.signInWithEmailAndPassword(
-                                    email: _email, password: _password);
-                                Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(
-                                        builder: (context) => dashboard()));
+                                _submitForm();
                               },
                             ),
                           ),
@@ -141,20 +146,16 @@ class _loginState extends State<login> {
                             height: 50,
                             padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
                             child: RaisedButton(
-                              textColor: Colors.white,
-                              color: Colors.deepPurple,
-                              child: Text('SignUp'),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20.0)),
-                              onPressed: () {
-                                auth.createUserWithEmailAndPassword(
-                                    email: _email, password: _password);
-
-                                Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(
-                                        builder: (context) => dashboard()));
-                              },
-                            ),
+                                textColor: Colors.white,
+                                color: Colors.deepPurple,
+                                child: Text('SignUp'),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20.0)),
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) {
+                                    return signUp();
+                                  }));
+                                }),
                           ),
                         ],
                       )
@@ -168,4 +169,56 @@ class _loginState extends State<login> {
       ),
     );
   }
+
+  Future<void> _alertDialogBuilder(String error) async {
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Error"),
+            content: Container(
+              child: Text(error),
+            ),
+            actions: [
+              FlatButton(
+                child: Text("OK"),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  Future<String> _loginAccount() async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _loginemailaddress.text.trim(),
+        password: _loginpassword.text.trim(),
+      );
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        return 'The password provided is too weak';
+      } else if (e.code == 'email already exist') {
+        return 'The account already exists for that email';
+      }
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  void _submitForm() async {
+    String _loginfeedback = await _loginAccount();
+    if (_loginfeedback != null) {
+      _alertDialogBuilder(_loginfeedback);
+    } else {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => dashboard()));
+    }
+  }
 }
+
