@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:project_autohub/screens/branchNetwork02.dart';
 
@@ -7,6 +8,20 @@ class branchNetwork01 extends StatefulWidget {
 }
 
 class _branchNetwork01State extends State<branchNetwork01> {
+  final _formKey = GlobalKey<FormState>();
+
+  TextEditingController _feedback;
+
+  DatabaseReference _ref;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _feedback = TextEditingController();
+    _ref = FirebaseDatabase.instance.reference().child('feedback');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,6 +48,7 @@ class _branchNetwork01State extends State<branchNetwork01> {
                   color: Colors.white60,
                   borderRadius: BorderRadius.all(Radius.circular(20.0))),
               child: TextField(
+                controller: _feedback,
                 decoration: InputDecoration(
                     labelText: 'Write your feedback', focusColor: Colors.blue),
               ),
@@ -45,10 +61,21 @@ class _branchNetwork01State extends State<branchNetwork01> {
           Navigator.push(context, MaterialPageRoute(builder: (_) {
             return branchNetwork02();
           }));
+          saveContact();
         },
         label: Text('Send'),
         backgroundColor: Colors.pink,
       ),
     );
   }
+
+  void saveContact() {
+    String feedback = _feedback.text;
+
+    Map<String, String> contact = {
+      'feedback': feedback,
+    };
+    _ref.push().set(contact);
+  }
 }
+
